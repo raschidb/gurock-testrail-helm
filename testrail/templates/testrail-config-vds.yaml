@@ -1,0 +1,88 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultDynamicSecret
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: testrail-configphp-vds
+spec:
+  mount: {{ .Values.configphpSecret.vaultMount }}
+  path: {{ .Values.configphpSecret.vaultDynamicSecretPath }}
+  vaultAuthRef: {{ .Values.configphpSecret.vaultAuthRef }}
+
+  destination:
+    create: true
+    name: {{ .Values.configphpSecret.vaultDynamicSecretDestination }}
+    transformation:
+      excludes:
+       - .*
+      templates:
+        config.php:
+          text: |
+                {{ "{{" }} printf "<?php" }}
+                {{ "{{" }} printf "    /*" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    | DATABASE CONFIGURATION" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | Please specify the database connection settings below. Currently"    {{ "}}" }}
+                {{ "{{" }} printf "    | supported databases are SQL Server (2008, 2012, 2014, 2016) and"     {{ "}}" }}
+                {{ "{{" }} printf "    | MySQL (5.x)." {{ "}}" }}
+                {{ "{{" }} printf "    */" {{ "}}" }}
+                {{ "{{" }} printf "    define('DB_DRIVER', {{ tpl .Values.configphpSecret.dbDriver . | squote }}); // sqlsrv or mysql" {{ "}}" }}
+                {{ "{{" }} printf "    define('DB_HOSTNAME', {{ tpl .Values.configphpSecret.dbHostname . | squote}});" {{ "}}" }}
+                {{ "{{" }} printf "    define('DB_DATABASE', {{ tpl .Values.configphpSecret.dbDatabase . | squote}});" {{ "}}" }}
+                {{ "{{" }} printf "    define('DB_USERNAME', {{ tpl .Values.configphpSecret.dbUsername . | squote}});" {{ "}}" }}
+                {{ "{{" }} printf "    define('DB_PASSWORD', '%s');" (get .Secrets.data {{ .Values.configphpSecret.vaultMysqlSecretKey | quote }} ) {{ "}}" }}
+                {{ "{{" }} printf "    /*" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    | CASSANDRA CONFIGURATION" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | Please specify the Cassandra connection settings below." {{ "}}" }}
+                {{ "{{" }} printf "    */" {{ "}}" }}
+                {{ "{{" }} printf "    /*" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    | DIAGNOSTICS" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | The following settings configure the logging and error behavior" {{ "}}" }}
+                {{ "{{" }} printf "    | of TestRail." {{ "}}" }}
+                {{ "{{" }} printf "    */" {{ "}}" }}
+                {{ "{{" }} printf "    define('LOG_PATH', {{ tpl .Values.configphpSecret.logPath . | squote}});" {{ "}}" }}
+                {{ "{{" }} printf "    define('AUDIT_PATH', {{ tpl .Values.configphpSecret.auditPath . | squote}});" {{ "}}" }}
+                {{ "{{" }} printf "    /*" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    | OPTIMIZATIONS" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | You can choose whether to optimize the delivery of style sheet and" {{ "}}" }}
+                {{ "{{" }} printf "    | javascript files and the handling of language files. The following" {{ "}}" }}
+                {{ "{{" }} printf "    | optimization settings are available:" {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | DEPLOY_OPTIMIZE_LANG:   If enabled, TestRail uses a single combined" {{ "}}" }}
+                {{ "{{" }} printf "    |                         language file named 'all_lang' instead of" {{ "}}" }}
+                {{ "{{" }} printf "    |                         multiple language files." {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | DEPLOY_OPTIMIZE_CSS:    If enabled, a single combined style sheet" {{ "}}" }}
+                {{ "{{" }} printf "    |                         is served to the clients." {{ "}}" }}
+                {{ "{{" }} printf "    |" {{ "}}" }}
+                {{ "{{" }} printf "    | DEPLOY_OPTIMIZE_JS:     If enabled, a single combined javascript" {{ "}}" }}
+                {{ "{{" }} printf "    |                         file is served to the clients." {{ "}}" }}
+                {{ "{{" }} printf "    */" {{ "}}" }}
+                {{ "{{" }} printf "    define('DEPLOY_OPTIMIZE_LANG', true);" {{ "}}" }}
+                {{ "{{" }} printf "    define('DEPLOY_OPTIMIZE_CSS', true);" {{ "}}" }}
+                {{ "{{" }} printf "    define('DEPLOY_OPTIMIZE_JS', true);" {{ "}}" }}
+                {{ "{{" }} printf "    /*" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    | DEBUG" {{ "}}" }}
+                {{ "{{" }} printf "    |--------------------------------------------------------------------" {{ "}}" }}
+                {{ "{{" }} printf "    */" {{ "}}" }}
+                {{- if .Values.configphpSecret.modeDebug   }}
+                {{ "{{" }} printf "    define('DEPLOY_DEBUG', {{ tpl .Values.configphpSecret.deployDebug . }});" {{ "}}" }}
+                {{ "{{" }} printf "    define('DEPLOY_DEBUG_TASK', {{  tpl .Values.configphpSecret.deployDebugTask . }});" {{ "}}" }}
+                {{- end }}
+                {{ "{{" }} printf "    define('CASSANDRA_HOSTNAME', '{{ tpl .Values.configphpSecret.cassandraHostname . }}');" {{ "}}" }}
+                {{ "{{" }} printf "    define('CASSANDRA_PORT', {{ tpl .Values.configphpSecret.cassandraPort . }});" {{ "}}" }}
+                {{ "{{" }} printf "    define('CASSANDRA_KEYSPACE', 'testrail');" {{ "}}" }}
+                {{ "{{" }} printf "    define('CASSANDRA_USERNAME', '{{ tpl .Values.configphpSecret.cassandraUsername . }}');" {{ "}}" }}
+                {{ "{{" }} printf "    define('CASSANDRA_PASSWORD', '%s');"  (get .Secrets.data {{ .Values.configphpSecret.vaultCassandraSecretKey | quote}} ) {{ "}}" }}
+                {{ "{{" }} printf "    define('CASSANDRA_SCHEMA_VERSION', 2);" {{ "}}" }}

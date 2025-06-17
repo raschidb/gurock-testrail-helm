@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-cassandra
+  labels:
+    app: cassandra
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.testrail.cassandra.replicas }}
+  selector:
+    matchLabels:
+      app: cassandra
+    {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: cassandra
+      {{- include "chart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        - name: CASSANDRA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "chart.fullname" . }}-cassandra-secret
+              key: {{ .Values.configphpSecret.vaultCassandraSecretKey }}
+        image: {{ .Values.testrail.cassandra.image.repository }}:{{ .Values.testrail.cassandra.image.tag | default .Chart.AppVersion }}
+        name: cassandra
+        resources: {}
+        volumeMounts:
+{{- if contains "bitnami" .Values.testrail.cassandra.image.repository }}
+          - mountPath: /bitnami/cassandra
+{{- else }}
+          - mountPath: /var/lib/cassandra
+{{- end }}
+            name: {{ include "chart.fullname" . }}-cassandra
+          - mountPath: /docker-entrypoint-initdb.d
+            name: {{ include "chart.fullname" . }}-cassandra-init-cm
+        securityContext:
+          {{- toYaml .Values.testrail.cassandra.securityContext | nindent 10 }}
+      securityContext:
+        {{- toYaml .Values.testrail.cassandra.podSecurityContext | nindent 8 }}        
+      restartPolicy: Always
+      volumes:
+      - name: {{ include "chart.fullname" . }}-cassandra
+        persistentVolumeClaim:
+          claimName: {{ include "chart.fullname" . }}-cassandra
+      - configMap:
+          name: {{ include "chart.fullname" . }}-cassandra-init-cm
+        name: {{ include "chart.fullname" . }}-cassandra-init-cm

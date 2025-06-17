@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-cassandra-svc
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.cassandra.type }}
+  selector:
+    app: cassandra
+  {{- include "chart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.cassandra.ports | toYaml | nindent 2 }}

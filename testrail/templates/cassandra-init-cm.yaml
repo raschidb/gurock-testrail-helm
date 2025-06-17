@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-cassandra-init-cm
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+data:
+  init-keyspace.cql: |-
+    CREATE KEYSPACE IF NOT EXISTS testrail WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-svc
+  labels:
+    app: testrail
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.svc.type }}
+  selector:
+    app: testrail
+  {{- include "chart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.svc.ports | toYaml | nindent 2 }}

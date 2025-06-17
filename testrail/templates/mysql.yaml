@@ -1,0 +1,55 @@
+{{- if .Values.mysql.modeDev }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-mysql
+  labels:
+    app: mysql
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.mysql.replicas }}
+  selector:
+    matchLabels:
+      app: mysql
+    {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: mysql
+      {{- include "chart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - args: {{- toYaml .Values.mysql.mysql8.args | nindent 8 }}
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: {{ quote .Values.mysql.mysql8.env.mysqlAllowEmptyPassword }}
+        - name: MYSQL_DATABASE
+          value: {{ quote .Values.mysql.mysql8.env.mysqlDatabase }}
+        - name: MYSQL_PASSWORD
+          value: {{ quote .Values.mysql.mysql8.env.mysqlPassword }}
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{ quote .Values.mysql.mysql8.env.mysqlRootPassword }}
+        - name: MYSQL_USER
+          value: {{ quote .Values.mysql.mysql8.env.mysqlUser }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.mysql.mysql8.image.repository }}:{{ .Values.mysql.mysql8.image.tag
+          | default .Chart.AppVersion }}
+        name: mysql-8
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: testrail-mysql
+        - mountPath: /docker-entrypoint-initdb.d
+          name: dump
+      restartPolicy: Always
+      volumes:
+      - name: testrail-mysql
+        persistentVolumeClaim:
+          claimName: {{ include "chart.fullname" . }}-mysql
+      - name: dump
+        hostPath:
+          path: {{ .Values.mysql.dumpPath }}
+          type: Directory
+{{ end }}

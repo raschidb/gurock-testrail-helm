@@ -1,0 +1,17 @@
+{{- if .Values.mysql.modeDev }}
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-mysql-service
+  labels:
+    app: mysql
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mysqlService.type }}
+  selector:
+    app: mysql
+  {{- include "chart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.mysqlService.ports | toYaml | nindent 2 }}
+{{ end }}

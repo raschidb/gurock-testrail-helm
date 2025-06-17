@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-apache
+  labels:
+    app: testrail
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.testrail.replicas }}
+  selector:
+    matchLabels:
+      app: testrail
+    {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: testrail
+      {{- include "chart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.testrail.testrail.image.repository }}:{{ .Values.testrail.testrail.image.tag
+          | default .Chart.AppVersion }}
+        name: testrail
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/www/testrail/config
+          name: testrail-config
+        - mountPath: /opt/testrail
+          name: testrail-opt
+        securityContext:
+          {{- toYaml .Values.testrail.securityContext | nindent 10 }}
+      securityContext:      
+        {{- toYaml .Values.testrail.podSecurityContext | nindent 8 }}
+      restartPolicy: Always
+      volumes:
+      - name: testrail-config
+        secret:
+          secretName: {{ .Values.configphpSecret.vaultDynamicSecretDestination }}
+      - name: testrail-opt
+        persistentVolumeClaim:
+          claimName: {{ include "chart.fullname" . }}-opt

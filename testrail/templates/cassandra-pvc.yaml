@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-cassandra
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.pvc.cassandra.storageClass | quote }}
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.pvc.cassandra.storageRequest | quote }}
+  volumeName: {{ .Values.pvc.cassandra.persistentVolumeName | quote }}

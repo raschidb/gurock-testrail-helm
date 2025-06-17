@@ -1,0 +1,134 @@
+testrail:
+  replicas: 1
+  testrail:
+    image:
+      repository: testrail/apache
+#      tag: "8.0.4.7036"
+#      tag: "8.0.1"
+#      tag: "7.5"
+      tag: "7.0"
+  ingress:
+  # TODO add ingressclassname
+    enabled: true
+    host: <env->bo-testrail.production-real.fr
+    #ingressClassName: ""
+    path: "/" # or this could be "/api", but might need "rewrite-target" annotation
+    annotations:
+      # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      # ingress.kubernetes.io/rewrite-target: /
+      # acme.cert-manager.io/http01-edit-in-place: "true"
+      cert-manager.io/cluster-issuer: acme-issuer
+      cert-manager.io/common-name: testrail.kubernetes.local
+    tls: true
+    secretName: testrail-secret
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+        capabilities:
+          drop:
+            - ALL
+
+configphpSecret:
+# Partie Vault qui alimente le VaultDynamicSecret 
+# point de montage vault
+  vaultMount: vault-mount
+# chemin du secret en dynamic secret (il fait ajouter /data devant pourquoi ?)
+  vaultDynamicSecretPath: data/pathto
+# chemin du secret 
+  vaultStaticSecretPath: pathto
+# AuthRef pour vault qui n'est pas créée par le helm 
+  vaultAuthRef: vault-auth
+# clé du password de bdd dans le kv vault
+  vaultMysqlSecretKey: mysqlpass
+# clé du password de cassandra dans le kv vault
+  vaultCassandraSecretKey: cassandrapass
+# Destination du secret qui sera monté dans le pod en tant que volume
+  vaultDynamicSecretDestination: testrail-configphp-secret
+# Config de la partie BDD
+  dbDriver: mysql
+  dbHostname: 'bdd_host:3310'
+  dbDatabase: testrail
+  dbUsername: testrail
+# Config de la partie Cassandra
+  cassandraHostname:  testrail-cassandra-svc
+  cassandraPort:  "9042"
+  cassandraUsername: cassandra
+# Path et mode debug DEPLOY_DEBUG et DEPLOY_DEBUG_TASK a true
+  logPath: /opt/testrail/logs/
+  auditPath: /opt/testrail/audit/
+  modeDebug: true
+kubernetesClusterDomain: cluster.local
+
+cassandra:
+  cassandra:
+    image:
+      repository: testrail/cassandra
+      tag: latest
+  ports:
+  - name: cassandra
+    port: 9042
+    targetPort: 9042
+  replicas: 1
+  type: ClusterIP
+
+pvc:
+# storageClass  longhorn ou longhorn-retain
+# 
+  cassandra:
+    storageClass: longhorn
+    storageRequest: 100Mi
+    persistentVolumeName: testrail-cassandra-pv
+  opt:
+    storageClass: longhorn-retain
+    storageRequest: 1Gi
+    persistentVolumeName: testrail-opt-pv
+
+# Si mysql.modeDebug est a true pas de retain pour ce pvc 
+  mysql:
+    storageClass: longhorn
+    storageRequest: 500Mi
+# Si on veut du persistant avec longhorn-retain
+    persistentVolumeName: 
+
+# Service Apache / PHP de testrail
+svc:
+  ports:
+  - name: "8000"
+    port: 8000
+    targetPort: 80
+  type: ClusterIP
+
+
+mysql:
+# modeDev a true va creer une base Mysql8 dans kube, il faut lui indiquer le chemin du dump a initialiser au demarrage dans la clé suivante dumpPath.
+# dump a deposer sur les workers
+# autrement toute la suite concerne la BDD de dev
+  modeDev: false
+  dumpPath: path_to/dump
+  mysql8:
+    args:
+    - --default-authentication-plugin=mysql_native_password
+    env:
+      mysqlAllowEmptyPassword: "false"
+      mysqlDatabase: testrail
+      mysqlPassword: testrail
+      mysqlRootPassword: my-secret-password
+      mysqlUser: testrail
+    image:
+      repository: mysql
+      tag: "8.0"
+  ports:
+  - name: "3306"
+    port: 3306
+    targetPort: 3306
+  replicas: 1
+  type: ClusterIP
+mysqlService:
+  ports:
+  - name: "3306"
+    port: 3306
+    targetPort: 3306
+  type: ClusterIP
+
+

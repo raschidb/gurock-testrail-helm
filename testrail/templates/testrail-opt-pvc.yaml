@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-opt
+  labels:
+	  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.pvc.opt.storageClass | quote }}
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.pvc.opt.storageRequest | quote }}
+{{- if and .Values.pvc.opt.persistentVolumeName (eq .Values.pvc.opt.storageClass "longhorn-retain")}}        
+  volumeName: {{ .Values.pvc.opt.persistentVolumeName | quote }}
+{{ end}}

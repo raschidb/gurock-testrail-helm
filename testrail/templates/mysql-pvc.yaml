@@ -1,0 +1,19 @@
+{{- if .Values.mysql.modeDev }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "chart.fullname" . }}-mysql
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.pvc.storageClassMysql | quote }}
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pvc.mysql.storageRequest | quote }}
+{{- if and .Values.pvc.mysql.persistentVolumeName (eq .Values.pvc.mysql.storageClass "longhorn-retain")}}
+  volumeName: {{ .Values.pvc.mysql.persistentVolumeName | quote }}
+{{ end }}
+{{ end }}
